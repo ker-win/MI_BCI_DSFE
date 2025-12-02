@@ -138,30 +138,90 @@ def evaluate_session(subject_id, session_id=None):
         feature_sets_train = []
         feature_sets_test = []
         
-        # Add basic feature sets if they exist
-        if F_fta_train is not None:
-            feature_sets_train.append(F_fta_train)
-            feature_sets_test.append(F_fta_test)
+        if config.USE_GLOBAL_FUSION and config.USE_RELIEFF:
+            # Global Fusion Mode: Fuse ALL available features into one vector
+            feature_dict_train = {}
+            feature_dict_test = {}
             
-        if F_rg_train is not None:
-            feature_sets_train.append(F_rg_train)
-            feature_sets_test.append(F_rg_test)
+            if F_fta_train is not None:
+                feature_dict_train['FTA'] = F_fta_train
+                feature_dict_test['FTA'] = F_fta_test
+                
+            if F_rg_train is not None:
+                feature_dict_train['RG'] = F_rg_train
+                feature_dict_test['RG'] = F_rg_test
+                
+            if F_ptc_train is not None:
+                feature_dict_train['PTC'] = F_ptc_train
+                feature_dict_test['PTC'] = F_ptc_test
+                
+            if feature_dict_train:
+                print("    [Global ReliefF] Fusing all features with Z-score normalization...")
+                F_fused_train, idx_sel, stats = fusion.fuse_all_features_with_relieff(feature_dict_train, y_train)
+                
+                # Apply selection to test set
+                # Need to concatenate test features in same order as train
+                # fusion.fuse_all_features_with_relieff uses list(feature_dict.keys()) order
+                # We must ensure same order. Dicts are insertion ordered in Python 3.7+, but let's be safe.
+                feature_names = list(feature_dict_train.keys())
+                
+                # Normalize test features using TRAIN statistics (mean/std)
+                # Ideally we should return scaler from fusion function, but for now let's re-calculate or simplify.
+                # The fusion function does normalization internally. We need to replicate that for test.
+                # To keep it clean, let's just normalize test here using train stats before concatenation?
+                # Or better: The fusion function returns indices. We just need to construct the BIG concatenated matrix for test
+                # and apply indices. BUT we must normalize test data using Train Mean/Std.
+                
+                # Let's do normalization manually here for clarity and correctness
+                norm_feats_test = []
+                for name in feature_names:
+                    F_tr = feature_dict_train[name]
+                    F_te = feature_dict_test[name]
+                    
+                    mean = np.mean(F_tr, axis=0)
+                    std = np.std(F_tr, axis=0)
+                    std[std == 0] = 1.0
+                    
+                    F_te_norm = (F_te - mean) / std
+                    norm_feats_test.append(F_te_norm)
+                    
+                F_all_test = np.concatenate(norm_feats_test, axis=1)
+                F_fused_test = F_all_test[:, idx_sel]
+                
+                feature_sets_train.append(F_fused_train)
+                feature_sets_test.append(F_fused_test)
+                
+                # Print Stats
+                stats_str = ", ".join([f"{k}: {v:.1f}%" for k, v in stats.items()])
+                print(f"      Feature Contribution: {stats_str}")
+                
+        else:
+            # Original Mode: Independent features + Optional Pairwise Fusion
             
-        if F_ptc_train is not None:
-            feature_sets_train.append(F_ptc_train)
-            feature_sets_test.append(F_ptc_test)
-            
-        # Add Fused set if enabled and we have both FTA and RG
-        if config.USE_RELIEFF and F_fta_train is not None and F_rg_train is not None:
-            print("    [ReliefF] Fusing features (FTA + RG)...")
-            F_fused_train, idx_sel = fusion.fuse_features_with_relieff(F_fta_train, F_rg_train, y_train)
-            
-            # Apply same selection to test
-            F_all_test = np.concatenate([F_fta_test, F_rg_test], axis=1)
-            F_fused_test = F_all_test[:, idx_sel]
-            
-            feature_sets_train.append(F_fused_train)
-            feature_sets_test.append(F_fused_test)
+            # Add basic feature sets if they exist
+            if F_fta_train is not None:
+                feature_sets_train.append(F_fta_train)
+                feature_sets_test.append(F_fta_test)
+                
+            if F_rg_train is not None:
+                feature_sets_train.append(F_rg_train)
+                feature_sets_test.append(F_rg_test)
+                
+            if F_ptc_train is not None:
+                feature_sets_train.append(F_ptc_train)
+                feature_sets_test.append(F_ptc_test)
+                
+            # Add Fused set if enabled and we have both FTA and RG
+            if config.USE_RELIEFF and F_fta_train is not None and F_rg_train is not None:
+                print("    [ReliefF] Fusing features (FTA + RG)...")
+                F_fused_train, idx_sel = fusion.fuse_features_with_relieff(F_fta_train, F_rg_train, y_train)
+                
+                # Apply same selection to test
+                F_all_test = np.concatenate([F_fta_test, F_rg_test], axis=1)
+                F_fused_test = F_all_test[:, idx_sel]
+                
+                feature_sets_train.append(F_fused_train)
+                feature_sets_test.append(F_fused_test)
             
         if not feature_sets_train:
             raise ValueError("No features selected! Enable USE_FTA, USE_RG, or USE_PTC.")

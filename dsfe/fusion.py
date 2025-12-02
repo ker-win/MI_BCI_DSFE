@@ -161,3 +161,73 @@ def fuse_features_with_relieff(F_fta, F_rg, y):
         F_fused = relieff.transform(F_all)
         
     return F_fused, selected_indices
+    return F_fused, selected_indices
+
+def fuse_all_features_with_relieff(feature_dict, y):
+    """
+    Fuse multiple feature sets using ReliefF with Z-score normalization and contribution analysis.
+    
+    Args:
+        feature_dict (dict): {'FeatureName': feature_matrix (n_trials, n_features)}
+        y (np.ndarray): Labels
+        
+    Returns:
+        F_fused (np.ndarray): Selected features
+        selected_indices (np.ndarray): Indices in the concatenated matrix
+        stats (dict): Contribution statistics {'FeatureName': percentage}
+    """
+    # 1. Normalize and Concatenate
+    feature_names = list(feature_dict.keys())
+    normalized_features = []
+    feature_ranges = {} # name: (start_idx, end_idx)
+    
+    current_idx = 0
+    for name in feature_names:
+        F = feature_dict[name]
+        
+        # Z-score Normalization
+        # Handle constant features (std=0) to avoid NaN
+        mean = np.mean(F, axis=0)
+        std = np.std(F, axis=0)
+        std[std == 0] = 1.0 
+        F_norm = (F - mean) / std
+        
+        normalized_features.append(F_norm)
+        
+        n_feats = F.shape[1]
+        feature_ranges[name] = (current_idx, current_idx + n_feats)
+        current_idx += n_feats
+        
+    F_all = np.concatenate(normalized_features, axis=1)
+    
+    # 2. Apply ReliefF
+    n_total = F_all.shape[1]
+    n_keep = int(n_total * config.RELIEFF_KEEP_RATIO)
+    n_keep = max(1, n_keep) # Ensure at least 1 feature
+    
+    # Try to use skrebate if available, else use custom
+    try:
+        from skrebate import ReliefF
+        relieff = ReliefF(n_features_to_select=n_keep, n_neighbors=config.N_NEIGHBORS_RELIEFF)
+        relieff.fit(F_all, y)
+        weights = relieff.feature_importances_
+        selected_indices = np.argsort(weights)[::-1][:n_keep]
+        
+    except ImportError:
+        # Use our simple implementation
+        relieff = SimpleReliefF(n_neighbors=config.N_NEIGHBORS_RELIEFF, n_features_to_select=n_keep)
+        relieff.fit(F_all, y)
+        selected_indices = relieff.top_features_
+        
+    F_fused = F_all[:, selected_indices]
+    
+    # 3. Contribution Analysis
+    stats = {}
+    for name in feature_names:
+        start, end = feature_ranges[name]
+        # Count how many selected indices fall into this range
+        count = np.sum((selected_indices >= start) & (selected_indices < end))
+        percentage = (count / n_keep) * 100
+        stats[name] = percentage
+        
+    return F_fused, selected_indices, stats

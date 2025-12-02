@@ -44,6 +44,7 @@ N_FOLDS_FDCC = 5           # Folds for internal CV in FDCC
 RELIEFF_KEEP_RATIO = 0.25  # Ratio of features to keep
 N_NEIGHBORS_RELIEFF = 20   # k nearest neighbors
 N_ITER_RELIEFF = 500       # Number of iterations (if using iterative implementation)
+USE_GLOBAL_FUSION = True   # Fuse all enabled features (FTA, RG, PTC) into one vector using ReliefF
 
 # --- Ensemble Settings ---
 SVM_WEIGHT = 0.16
