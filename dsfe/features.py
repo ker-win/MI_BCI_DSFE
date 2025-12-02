@@ -119,3 +119,93 @@ def compute_rg_features(X, fs, band, training_data=None):
     G = np.stack(feats, axis=0)
     
     return G, {'P_G': P_G}
+
+def compute_ptc_features(X, fs, bands, window_size, overlap=0.0):
+    """
+    Compute Power Time Course (PTC) features.
+    
+    For each band in bands:
+        1. Bandpass filter X.
+        2. Compute instantaneous power (squared signal).
+        3. Average power in sliding windows.
+        
+    Args:
+        X (np.ndarray): (n_trials, n_channels, n_times)
+        fs (float): Sampling rate
+        bands (dict): Dictionary of bands, e.g., {'mu': (8, 13), 'beta': (13, 30)}
+        window_size (float): Window size in seconds
+        overlap (float): Overlap in seconds
+        
+    Returns:
+        F (np.ndarray): (n_trials, n_features)
+    """
+    n_trials, n_channels, n_times = X.shape
+    
+    n_samples_window = int(window_size * fs)
+    n_samples_overlap = int(overlap * fs)
+    step = n_samples_window - n_samples_overlap
+    
+    if step <= 0:
+        raise ValueError("Overlap must be smaller than window size.")
+        
+    all_band_features = []
+    
+    for band_name, (f1, f2) in bands.items():
+        # 1. Filter
+        X_filt = mne.filter.filter_data(
+            X.astype(np.float64), 
+            sfreq=fs, 
+            l_freq=f1, 
+            h_freq=f2, 
+            method='iir', 
+            verbose=False
+        )
+        
+        # 2. Power (squared signal)
+        # Alternatively, could use Hilbert envelope: np.abs(hilbert(X_filt))**2
+        # But simple squared signal is common for "power".
+        X_pow = X_filt ** 2
+        
+        # 3. Sliding Window Average
+        band_window_powers = []
+        
+        # Iterate through windows
+        # Range: 0 to n_times - n_samples_window, step=step
+        for start_idx in range(0, n_times - n_samples_window + 1, step):
+            end_idx = start_idx + n_samples_window
+            
+            # Average power in this window: (n_trials, n_channels)
+            win_pow = np.mean(X_pow[:, :, start_idx:end_idx], axis=2)
+            band_window_powers.append(win_pow)
+            
+        if not band_window_powers:
+             # Handle case where data is shorter than one window
+             print(f"Warning: Data length ({n_times}) is shorter than PTC window ({n_samples_window}).")
+             continue
+
+        # Concatenate windows for this band: (n_trials, n_channels * n_windows)
+        # band_window_powers is list of (n_trials, n_channels)
+        # Stack along axis 1 (channels) -> (n_trials, n_channels, n_windows) -> flatten
+        # Or just concatenate all features.
+        # User said: P_mu(t1), ..., P_mu(tN), P_beta(t1), ...
+        # So we want [Channel1_Win1, Channel1_Win2..., Channel2_Win1...] or [Win1_Ch1, Win1_Ch2...]
+        # Let's stack windows first: (n_trials, n_windows, n_channels)
+        # Then flatten to (n_trials, n_features)
+        
+        # Stack windows: (n_trials, n_windows, n_channels)
+        # But wait, band_window_powers is list of (n_trials, n_channels)
+        # np.stack(..., axis=1) -> (n_trials, n_windows, n_channels)
+        W = np.stack(band_window_powers, axis=1) 
+        
+        # Flatten: (n_trials, n_windows * n_channels)
+        W_flat = W.reshape(n_trials, -1)
+        
+        all_band_features.append(W_flat)
+        
+    if not all_band_features:
+        return np.zeros((n_trials, 0))
+        
+    # Concatenate bands: (n_trials, total_features)
+    F = np.concatenate(all_band_features, axis=1)
+    
+    return F

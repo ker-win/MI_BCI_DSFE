@@ -14,6 +14,12 @@ USE_RG = False           # Use Riemannian Geometry features
 USE_FDCC = True         # Use Feature-Dependent Correlation Coefficient band selection
 USE_RELIEFF = True      # Use ReliefF feature selection/fusion
 USE_ENSEMBLE = True     # Use Ensemble Learning (SVM+RF+NB)
+USE_PTC = True          # Use Power Time Course features
+
+# --- PTC Settings ---
+PTC_BANDS = {'mu': (8.0, 13.0), 'beta': (13.0, 30.0)}
+PTC_WINDOW_SIZE = 0.2   # Window size in seconds
+PTC_OVERLAP = 0.0       # Overlap in seconds
 
 # --- Multi-Window Settings ---
 USE_MULTI_WINDOW = True

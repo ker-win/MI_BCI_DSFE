@@ -124,6 +124,15 @@ def evaluate_session(subject_id, session_id=None):
             F_rg_train, meta = features.compute_rg_features(X_train, fs_raw, band_rg)
             F_rg_test, _ = features.compute_rg_features(X_test, fs_raw, band_rg, training_data=meta)
             
+        # PTC
+        F_ptc_train = None
+        F_ptc_test = None
+        
+        if config.USE_PTC:
+            # print("    [PTC] Extracting Power Time Course features...")
+            F_ptc_train = features.compute_ptc_features(X_train, fs_raw, config.PTC_BANDS, config.PTC_WINDOW_SIZE, config.PTC_OVERLAP)
+            F_ptc_test = features.compute_ptc_features(X_test, fs_raw, config.PTC_BANDS, config.PTC_WINDOW_SIZE, config.PTC_OVERLAP)
+            
         # --- Fusion ---
         
         feature_sets_train = []
@@ -138,9 +147,13 @@ def evaluate_session(subject_id, session_id=None):
             feature_sets_train.append(F_rg_train)
             feature_sets_test.append(F_rg_test)
             
-        # Add Fused set if enabled and we have both
+        if F_ptc_train is not None:
+            feature_sets_train.append(F_ptc_train)
+            feature_sets_test.append(F_ptc_test)
+            
+        # Add Fused set if enabled and we have both FTA and RG
         if config.USE_RELIEFF and F_fta_train is not None and F_rg_train is not None:
-            print("    [ReliefF] Fusing features...")
+            print("    [ReliefF] Fusing features (FTA + RG)...")
             F_fused_train, idx_sel = fusion.fuse_features_with_relieff(F_fta_train, F_rg_train, y_train)
             
             # Apply same selection to test
@@ -151,7 +164,7 @@ def evaluate_session(subject_id, session_id=None):
             feature_sets_test.append(F_fused_test)
             
         if not feature_sets_train:
-            raise ValueError("No features selected! Enable USE_FTA or USE_RG.")
+            raise ValueError("No features selected! Enable USE_FTA, USE_RG, or USE_PTC.")
             
         # --- Classification ---
         
