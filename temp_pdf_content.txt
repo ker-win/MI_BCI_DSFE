@@ -1,0 +1,1242 @@
+IEEE JOURNAL OF BIOMEDICAL AND HEALTH INFORMATICS, VOL. 29, NO. 6, JUNE 2025 4121
+Fine-Grained Spatial-Frequency-Time
+Framework for Motor Imagery
+Brain–Computer Interface
+Guoyang Liu, Member, IEEE, Rui Zhang , Lan Tian , and Weidong Zhou
+Abstract— The Motor Imagery Brain–Computer Interfaces
+(MI-BCIs) have shown considerable promise for applica-
+tions in neural rehabilitation. However, improving the prac-
+ticality and interpretability of MI-BCIs remains a critical
+challenge. Unlike previous methods that focus generally on
+either spatial, frequency, or temporal domains with coarse-
+grained segmentation schemes, this study proposes a
+novel ﬁne-grained spatial-frequency-time (FGSFT) frame-
+work, aiming to enhance the efﬁciency and reliability of
+MI-BCIs. Multi-channel MI EEG recordings are ﬁrstly pro-
+cessed through multiscale time-frequency segmentation
+and spatial segmentation schemes, yielding ﬁne-grained
+spatial-frequency-time segments (SFTSs). The key SFTSs
+are then selected with a tailored wrapper-based feature
+selection approach. Discriminative MI EEG features are
+extracted using a divergence-based common spatial pat-
+tern algorithm with intra-class regularization and classiﬁed
+using an efﬁcient linear support vector machine (SVM).
+The proposed framework was evaluated on the BCI IV IIa
+and SDU-MI datasets, demonstrating state-of-the-art per-
+formance in terms of information transfer rate (ITR) Mean-
+while, the proposed spatial segmentation strategy can sig-
+niﬁcantly improve the performance of MI-BCIs when using
+a larger number of electrodes. Additionally, the ﬁne-grained
+Motor Imagery Time-Frequency Reaction Map (MI-TFRM)
+and time-frequency topographical map can be obtained
+with the proposed framework enabling visualization of the
+subject-speciﬁc dynamic neural process during motor im-
+agery tasks, facilitating the devising of personalized MI-
+BCIs. The FGSFT framework signiﬁcantly advances the ac-
+curacy, ITR, and interoperability of MI-BCIs, paving the way
+Received 25 March 2024; revised 31 December 2024; accepted 24
+January 2025. Date of publication 29 January 2025; date of current
+version 6 June 2025. This work was supported in part by the Na-
+tional Natural Science Foundation of China under Grant 62401342,
+and Grant 62271291, in part by the Key Program of Natural Sci-
+ence Foundation of Shandong Province under Grant ZR2020LZH009,
+in part by the Shenzhen Science and Technology Program under
+Grant GJHZ20220913142607013, and in part by the Natural Science
+Foundation of Shandong Province under Grant ZR2024QF092, Grant
+ZR2021ZD40, and Grant ZR2021MF065. (Corresponding authors: Wei-
+dong Zhou; Lan Tian.)
+This work involved human subjects or animals in its research. Ap-
+proval of all ethical and experimental procedures and protocols was
+granted by the Ethics Committee of Qilu Hospital of Shandong University
+under Application No. KYLL-202204-040-1, and performed in line with
+the Declaration of Helsinki.
+The authors are with the School of Integrated Circuits, Shan-
+dong University, Jinan 250100, China (e-mail: gyliu@sdu.edu.
+cn; 202320399@mail.sdu.edu.cn; tianlan65@sdu.edu.cn; wdzhou@
+sdu.edu.cn).
+Digital Object Identiﬁer 10.1109/JBHI.2025.3536212
+for future neuroscientiﬁc research and clinical applications
+in neural rehabilitation and assistive technologies.
+Index Terms— Motor imagery, brain–computer interface,
+EEG, common spatial pattern.
+I. I NTRODUCTION
+I
+N The ﬁeld of neural engineering, Motor Imagery Brain–
+Computer Interfaces (MI-BCIs) offer a transformative ap-
+proach to bridging human cognition with external systems
+by decoding electroencephalogram (EEG) signals[1], [2].B y
+facilitating non-muscular interaction, MI-BCIs offer individu-
+als with severe motor impairments renewed opportunities for
+communication and control[3]. This transformative paradigm
+not only improves the quality of their lives but also lays a
+foundation for innovative rehabilitation strategies[4]. Despite
+signiﬁcant progress, improving the accuracy, robustness, and
+interpretability of MI-BCI systems remains challenging.
+Deep learning approaches, including convolutional and re-
+current neural networks, have emerged as powerful tools due to
+their end-to-end feature learning capabilities and their capacity
+to model complex temporal dependencies [5]. Nevertheless,
+these models often require large, high-quality datasets for opti-
+mized performance, a condition rarely met in MI-BCI practice
+due to the inherently noisy EEG signals and the limited EEG
+data obtained from controlled MI tasks[6]. Furthermore, while
+attention-based and hybrid deep learning architectures have been
+applied to identify discriminative features and key temporal or
+spatial locations[7], [8], the underlying decision-making pro-
+cesses remain unclear[9], making it difﬁcult to map their learned
+representations onto the neurophysiological underpinnings of
+motor imagery. This limitation will be further compounded by
+focusing only on either spatial or temporal aspects, or segment-
+ing frequency bands at a coarse-grained level, possibly resulting
+in missing the subtle but critical neural oscillatory patterns. Such
+interpretability deﬁcits not only hinder the neuroscientiﬁc under-
+standing of dynamic brain mechanisms but also pose practical
+barriers to clinical adoption and personalization. In scenarios
+where subject-speciﬁc adaptations are important, the inability
+to elucidate how these models make their decisions impedes the
+development of individualized neural decoding strategies and
+limits the MI-BCI system’s credibility and efﬁcacy.
+Although some previous studies have taken initial steps to-
+ward incorporating time-frequency domain segmentation, these
+strategies often remain at the coarse-grained stage and fail to
+integrate with spatial segmentation methods[10], [11]. While
+2168-2194 © 2025 IEEE. All rights reserved, including rights for text and data mining, and training of artiﬁcial intelligence and similar technologi es.
+Personal use is permitted, but republication/redistribution requires IEEE permission. See https://www.ieee.org/publications/rights/index. html
+for more information.
+Authorized licensed use limited to: National Cheng Kung Univ.. Downloaded on November 13,2025 at 02:33:25 UTC from IEEE Xplore.  Restrictions apply. 
+4122 IEEE JOURNAL OF BIOMEDICAL AND HEALTH INFORMATICS, VOL. 29, NO. 6, JUNE 2025
+several studies have explored multi-scale time and frequency
+segmentation strategies[12], [13], Few have presented a holistic
+approach that uniﬁes ﬁnely granulated segmentation across spa-
+tial, frequency, and temporal domains. Without such integrated
+ﬁne-grained strategies, current methods struggle to identify and
+preserve the ﬁne-grained and critical spatial-frequency-time
+features that are pivotal for achieving both high classiﬁcation
+accuracy and interpretability. The absence of a comprehensive
+framework that leverages multi-scale time-frequency segmen-
+tation with a spatially segmented architecture underscores a
+key unmet need in MI-BCI research. This gap motivates us
+to develop approaches capable of representing the complex,
+subject-speciﬁc neural dynamics that govern motor imagery
+tasks in a more interpretable and performance-optimized man-
+ner.
+To address these limitations, we propose a novel ﬁne-grained
+spatial-frequency-time (FGSFT) framework. Our approach in-
+troduces a multiscale time-frequency domain segmentation
+combined with a comprehensive spatial segmentation strategy
+to generate discriminative Spatial-Frequency-Time Segments
+(SFTSs) from multi-channel EEG data. By creating multiple
+subsets of electrodes corresponding to various spatial domains
+using both manual and automatic channel selection strategies,
+our method allows for a more comprehensive capture of the
+complex spatial patterns inherent in EEG data. A wrapper-based
+feature selection algorithm is then employed to identify the
+most informative SFTSs, enabling superior classiﬁcation ac-
+curacy and improved computational efﬁciency. Notably, this
+work not only focuses on improving the accuracy of subject-
+speciﬁc brain–computer interfaces but also aims to investigate
+the subject-speciﬁc neural mechanisms implicated in motor im-
+agery tasks through ﬁne-grained time-frequency topographical
+maps generated by the proposed framework. These visualiza-
+tions improve interpretability and provide insights into individu-
+alized neural activities, enabling the design of more personalized
+and effective MI-BCIs. The main contributions of this work are:
+r We propose a novel ﬁne-grained spatial-frequency-time
+(FGSFT) framework that signiﬁcantly enhances the ex-
+traction and classiﬁcation of MI-BCI signals. The FGSFT
+framework integrates a multiscale time-frequency seg-
+mentation with a spatial segmentation strategy, enabling
+the accurate extraction of discriminative SFTSs from
+multi-channel EEG data.
+r We introduce a wrapper-based feature selection algorithm
+to identify the most informative STFSs, improving both
+the accuracy and efﬁciency of MI-BCI classiﬁcation.
+r We achieve state-of-the-art performance on two bench-
+mark MI-BCI datasets in terms of information transfer
+rate (ITR), demonstrating the reliability and efﬁciency of
+the proposed approach.
+r The ﬁne-grained Motor Imagery Time-Frequency Reac-
+tion Map (MI-TFRM) and time-frequency topographical
+map can be obtained with the proposed framework to allow
+for visualization of the subject-speciﬁc dynamic neural
+process and the individual variability in neural responses
+during motor imagery tasks, thereby signiﬁcantly improv-
+ing the model interpretability and facilitating the design
+of personalized MI-BCIs.
+The remainder of this paper is organized as follows: In
+Section II, we comprehensively review the existing literature on
+MI-BCI methods. SectionIII details the experimental materials
+and the proposed methods. Section IV presents the evalua-
+tion results on two MI-BCI datasets. SectionV provides the
+visualization and discussion of the obtained ﬁndings. Finally,
+Section VI draws the conclusion.
+II. R ELATED WORKS
+Early efforts in MI-BCI research focused mainly on optimiz-
+ing spatial ﬁlters to extract discriminative features from EEG
+signals. The Common Spatial Pattern (CSP) algorithm, which
+relies on the covariance between spatially ﬁltered EEG signals,
+has been widely used for feature extraction[14]. Despite its
+popularity, the CSP method is prone to overﬁtting and sensi-
+tivity to noise, leading to the development of Regularized CSP
+(RCSP) [15]. RCSP incorporates quadratic penalties based on
+prior knowledge, yielding improved robustness and generaliza-
+tion. Subsequently, advanced variants have exploredLp-norms
+to further reﬁne spatial ﬁlters. For example, Park et al.[16]
+introduced CSP-Lp to identify optimalp values for improved MI
+performance, while Cai et al.[17] developed CSP-Lp/q to en-
+hance generalization across multiple BCI competition datasets.
+Complementary approaches have redeﬁned CSP as a divergence
+maximization problem. Samek et al.[18], [19] introduced a
+divergence-based CSP framework that utilizes gradient descent
+on an orthogonal manifold, enabling sparse spatial ﬁlters that
+have shown effectiveness in multi-class MI paradigms[20],
+[21]. Parallel to these endeavors, Riemannian geometry-based
+methods have gained traction by formulating MI-BCI feature
+extraction as a problem within a geometric manifold [22],
+[23]. Although these Riemannian geometry-based methods of-
+ten demonstrate robust performance, their high computational
+complexity and extensive feature dimensionality limit their fea-
+sibility in real-world applications[24].
+With the advent of powerful computing resources, deep learn-
+ing has emerged as another dominant approach for MI-EEG
+feature extraction and classiﬁcation[25]. Convolutional neural
+networks (CNNs) have been extensively explored, ranging from
+compact architectures like EEGNet[26] to deeper networks that
+extract complex spatial-temporal patterns[27], [28], [29].R e -
+current neural networks (RNNs), with their inherent capability
+to model temporal dependencies, have also been employed[30],
+[31]. Moreover, attention-based architectures have been pro-
+posed to highlight the most discriminative features[8], [32].
+Recently, transformer-based models such as Vision Transformer
+(ViT) have gained considerable attraction in MI-BCI ﬁelds due
+to their global dependency capturing capability, further enhanc-
+ing the accuracy of MI-BCI[7], [33], [34]. Nevertheless, these
+deep learning architectures also depend heavily on substantial
+training data and often exhibit limited interpretability. Mean-
+while, the attention patterns generated by attention modules
+cannot straightforwardly translate into human-understandable
+explanations of the underlying neural mechanisms.
+To address the limited exploration of frequency dynamics,
+numerous approaches have adopted various frequency-domain
+strategies. The sub-band CSP (SBCSP)[10] pioneered decom-
+posing EEG signals into multiple frequency bands, while ﬁlter-
+bank CSP (FBCSP) [11] further integrated feature selection
+Authorized licensed use limited to: National Cheng Kung Univ.. Downloaded on November 13,2025 at 02:33:25 UTC from IEEE Xplore.  Restrictions apply. 
+LIU et al.: FINE-GRAINED SPATIAL-FREQUENCY -TIME FRAMEWORK FOR MOTOR IMAGERY BRAIN–COMPUTER INTERFACE 4123
+algorithms to identify key frequency bands. Afterward, it was
+found that applying the time domain segmentation strategy
+effectively enhanced the performance of CSP-based MI-BCI al-
+gorithms [35]. Subsequently, more sophisticated time-frequency
+segmentation methods have been introduced. For instance, Miao
+et al. [12] and Wang et al. [13] subdivided EEG data into
+multiple time-frequency segments to capture a richer set of
+discriminative features. Recently, Pei et al.[36] greatly extended
+the FBCSP with a novel tensor-based frequency features com-
+bination method, which combined tensor-to-vector projection,
+fast Fourier transform, CSP, and feature fusion, resulting in
+robust improvements in MI-BCI accuracy. The work visualized
+the personalized useful frequency bands and conﬁrmed the
+importance of frequency information in MI-BCI systems. Chen
+et al.[37] developed an optimization strategy based on dynamic
+time windows, improving the efﬁciency of the SSVEP-BCI sys-
+tem. Additionally, Riemannian geometry-based methods have
+also incorporated similar segmentation strategies[38], [39], and
+multiscale CNN architectures have been proposed to exploit
+multi-band temporal patterns[40]. Despite these advancements,
+they mainly rely on coarse-grained segmentation schemes and
+fail to fully exploit ﬁne-grained multi-dimensional EEG feature
+extraction.
+In addition to time-frequency segmentation, spatial opti-
+mization has also attracted extensive attention. Several stud-
+ies proposed data augmentation approaches based on channel-
+level and time-level perturbation[8], [41], enhancing the deep
+learning-based MI-BCI algorithms. On the other hand, CSP-
+based time-frequency optimization using multiple intervals and
+bands has been demonstrated in[42], [43], [44], [45], while
+others integrated channel selection with RCSP[46], or combined
+channel selection with deep learning models[47], [48]. Jiang
+et al.[49] proposed a spatio-temporal ﬁltering strategy for CSP
+algorithm, which can update the spatial and temporal ﬁlters
+automatically. More recent work[50] presented a method to
+extract the multi-view time-frequency decomposed spatial fea-
+ture matrix using CSP-based and Riemannian-based algorithms,
+achieving improved accuracy of MI-BCI. These methods mark
+important steps toward capturing localized spatial features and
+improving classiﬁcation performance. However, they generally
+applied channel weighting strategy (e.g., CSP-based methods)
+or combined it with single-scale spatial segmentation strategy
+(e.g., channel selection-based methods), and the multi-scale ﬁne-
+grained spatial features of EEG have not been fully explored.
+These gaps in the literature motivate us to investigate the
+ﬁne-grained spatial-frequency-time (FGSFT) framework. By
+simultaneously and systematically segmenting the EEG data in
+spatial, frequency, and temporal domains and coupling these
+strategies with effective feature selection methods, our proposed
+approach signiﬁcantly improves both performance and inter-
+pretability of MI-BCIs.
+III. M ATERIALS AND METHODS
+In this work, a ﬁne-grained spatial-frequency-time framework
+is proposed for motor imagery brain–computer interface. Fig.1
+illustrates the overall architecture of the proposed framework.
+In the training phase, the pre-processed EEG data are ﬁrst
+segmented into ﬁne-grained SFTSs, and then the discriminative
+Fig. 1. The overall architecture of the proposed BCI framework.
+Fig. 2. The electrode placement of (a) BCI IV IIa dataset and (b) SDU-
+MI dataset.
+EEG features are extracted by divCSP. After that, an effective
+wrapper-based feature selection approach is applied, and the
+information of the selected SFTs is saved. Finally, the optimized
+ensembled SVM model is trained. In the testing phase, the testing
+EEG data are segmented into optimized SFTSs according to
+the selected SFTs information obtained from the training phase,
+and they are then sent into the optimized model to obtain the
+predicted label. Moreover, the thorough time-frequency-spatial
+analyses using the interpretable feature selection approach are
+discussed in the Discussion section.
+A. EEG Datasets
+Two motor imagery EEG datasets were adopted in this study
+to evaluate the proposed algorithms comprehensively, where
+the ﬁrst one was the BCI IV IIa dataset[51], [52], a widely
+used and publicly available MI-BCI dataset, and another was
+a BCI dataset collected by ourselves. The BCI IV IIa dataset
+comprised 25-channel EEG data from nine subjects, where 22
+of which were scalp EEG channels (as shown in Fig.2(a)), and
+the remaining three were monopolar electrooculography (EOG)
+channels. The EEG data was sampled at a frequency of 250 Hz
+and pre-ﬁltered by a bandpass ﬁlter in the range of 0.5 Hz to
+100 Hz, including a 50 Hz notch ﬁlter to avoid line noise. This
+Authorized licensed use limited to: National Cheng Kung Univ.. Downloaded on November 13,2025 at 02:33:25 UTC from IEEE Xplore.  Restrictions apply. 
+4124 IEEE JOURNAL OF BIOMEDICAL AND HEALTH INFORMATICS, VOL. 29, NO. 6, JUNE 2025
+Fig. 3. The EEG collection paradigm of two databases. (a) Paradigm
+of BCI IV IIa dataset. (b) Paradigm of SDU-MI dataset.
+study focuses on the EEG channels, omitting the EOG channels
+to concentrate on the brain activity relevant to motor imagery
+tasks. The dataset was collected with a typical motor imagery
+experimental paradigm, and the details of which are illustrated
+in Fig. 3(a). This paradigm consisted of four types of motor
+imagery tasks: left hand, right hand, tongue, and feet, and these
+four tasks are equally and randomly distributed in the collection
+procedure of 288 trials per subject during the training session,
+with the same number of trials conducted in the test session.
+Note that these sessions were conducted on separate days. Each
+session consisted of six blocks, with each block containing 48
+trials. Subjects were given short rest periods between blocks
+to prevent fatigue. To simplify the task, we only consider the
+left/right-hand imagery task in this work. Each trial in this dataset
+is segmented from 2 seconds to 5 seconds post-stimulus onset.
+The SDU-MI (Shandong University - Motor Imagery) dataset
+was collected for a more comprehensive evaluation of the pro-
+posed framework. This dataset contained EEG recordings from
+ten participants (7 males and 3 females), all aged 18 to 25 years
+and afﬁliated with Shandong University. These recordings were
+captured using the NeuSen-W64 EEG data acquisition system,
+equipped with 59 electrodes aligned according to the extended
+10-20 international system (see Fig.2(b)). The EEG signals
+were sampled at 1000 Hz, with a reference electrode located
+between Pz and Cz, and a ground electrode between Fpz and
+Fz. Three separate binary motor imagery tasks were performed:
+imagining left versus right-hand movements (with a ﬁxed el-
+bow position to concentrate on hand motion), left versus right
+elbow movements (with a ﬁxed hand position to concentrate
+on elbow motion), and combined left elbow and hand versus
+right elbow and hand movements (e.g., simulating actions like
+reaching out and grasping a cup). These tasks were chosen to
+reﬂect distinct motor control areas, enriching the applicability
+of datasets in developing brain–computer interfaces. Participants
+completed these tasks in three separate sessions conducted on the
+same day, with a rest period of 10–30 minutes between sessions.
+The order of the tasks was randomized and determined by the
+participants’ preferences. Experimentally, each motor imagery
+task followed a consistent paradigm, similar to the paradigm in
+BCI IV IIa dataset. The paradigm for each binary task comprised
+ﬁve blocks, each containing 40 trials where the two classes of
+motor imagery were equally and randomly presented. As shown
+in Fig.3(b), a trial began with a preparatory phase (0–2 seconds),
+Fig. 4. The ﬁne-grained segmentation schemes in time and frequency
+domains. (a) The ﬁne-grained temporal segmentation scheme. (b) The
+ﬁne-grained frequency segmentation scheme.
+where cues in the form of images depicting the hand, elbow,
+or hand plus elbow were displayed, followed by a directive
+phase (2–4 seconds), where cues indicating the direction of
+imagined movement (left or right) were shown. Participants
+were instructed to conduct their motor imagery following these
+cues. The trial concluded with a rest period (6–9 seconds),
+signiﬁed by a blank screen, allowing for mental recovery before
+proceeding to the next trial. This study was approved by the
+Ethics Committee of Qilu Hospital of Shandong University.
+In the preprocessing phase, the raw EEG data from both
+datasets were uniformly resampled to a frequency of 250 Hz.
+To simulate real-world conditions and validate the robustness of
+our model, we refrained from excluding any trials or channels,
+preserving the authenticity and complexity of EEG datasets. To
+evaluate the efﬁcacy of the proposed algorithm, we adopted a
+Leave-One-Block-Out (LOBO) cross-validation strategy in both
+two MI databases for within-session evaluation. This validation
+approach ensures that each block of data is used once as the
+test set, with the remaining blocks forming the training set.
+Speciﬁcally, a 6-fold LOBO cross-validation was conducted
+on the BCI IV IIa dataset. Concurrently, the SDU-MI dataset,
+with ﬁve blocks per session, was subjected to a 5-fold LOBO
+cross-validation. Considering that the BCI IV IIa database has
+two sessions, and the second session was determined as the test
+set in the BCI competition, we also report the accuracy and ITR
+on its test set for cross-session evaluation. It is important to note
+that both the classiﬁer training and feature ranking procedures
+were only performed on the training set, avoiding information
+leakage.
+B. S-F-T Segmentation Scheme
+To comprehensively capture the temporal, spectral, and spatial
+characteristics of EEG signals, we introduce a novel frame-
+work for multi-scale, ﬁne-grained segmentation across time,
+frequency, and space dimensions. In the time domain, the scale is
+deﬁned by the length of the time window, and the time segmenta-
+tion is executed by windowing. We have developed a multi-scale
+temporal windowing approach with window lengths of 0.2, 0.4,
+0.7, 1.0, 1.25, and 1.5 seconds, each overlapping by 50%. For
+instance, Fig.4(a) illustrates the multi-scale temporal windows
+corresponding to EEG data with a duration of 1.5 seconds.
+All temporal segments are obtained using rectangular windows,
+ensuring that for each scale, the last window terminates at the
+end of the EEG data. Furthermore, this multi-scale temporal
+Authorized licensed use limited to: National Cheng Kung Univ.. Downloaded on November 13,2025 at 02:33:25 UTC from IEEE Xplore.  Restrictions apply. 
+LIU et al.: FINE-GRAINED SPATIAL-FREQUENCY -TIME FRAMEWORK FOR MOTOR IMAGERY BRAIN–COMPUTER INTERFACE 4125
+windowing strategy, featuring six distinct window lengths, also
+applies to EEG data exceeding 1.5 seconds.
+In the frequency domain, the scale corresponds to the band-
+width of the frequency, and the frequency segmentation is im-
+plemented by band-pass ﬁltering. We proposed a multi-scale
+frequency band set with bandwidths of 4, 8, 16, and 32 Hz, each
+with 50% overlap. Fig.4(b) depicts these bands, where each line
+represents the passband of a bandpass ﬁlter, with the left and right
+endpoints indicating the start and stop frequencies, respectively.
+Notably, the ﬁnal scale with a 4 Hz bandwidth encompasses
+the range of 30–34 Hz. For different frequency bands, we
+utilize a 5th-order Butterworth bandpass ﬁlter to process the
+EEG signals, thereby acquiring the segmented signals in the
+frequency domain. To preserve the time-domain information
+and eliminate the phase distortion, zero-phase ﬁltering was
+employed. Speciﬁcally, the input signal was initially ﬁltered in
+the forward direction, and the output after this forward ﬁltering
+step was reversed and processed again through the same ﬁlter in
+the backward direction, resulting in a zero-phase ﬁltered signal.
+In the spatial domain (channel domain) for EEG analysis,
+the selection of an optimal set of electrodes is an NP-hard
+problem. This is because the number of possible combinations
+of electrodes grows exponentially with the number of elec-
+trodes, thus making exhaustive search impractical for larger
+sets. Accordingly, this study introduces a hybrid approach that
+combines manual and data-driven channel selection to conduct
+the spatial segmentation of EEG signals. The manual selection
+of electrodes is grounded in the well-established ERD/ERS
+phenomenon during motor imagery tasks. Speciﬁcally, motor
+imagery of left and right-hand movements induces contralateral
+desynchronization (ERD) over the sensorimotor cortex, while
+ipsilateral synchronization (ERS) can also occur[3]. This con-
+tralateral ERD and ipsilateral ERS symmetry is a key neurophys-
+iological foundation leveraged in the manual channel selection
+process. Given this principle, our manual selection of channels
+was based on creating symmetrical (left-right) electrode subsets
+to capture and exploit this ERD/ERS symmetry effectively.
+Fig. 5(a) illustrates ten different electrode conﬁgurations for
+the 22-channel EEG data in the BCI IV IIa dataset. The ﬁrst
+eight conﬁgurations are systematically designed to explore the
+spatial dynamics of motor-related ERD/ERS phenomena. The
+last two conﬁgurations are generated using a correlation-based
+channel selection algorithm proposed in[53], comprising 8 and
+12 channels, respectively. Furthermore, Fig.5(b) displays 20
+electrode subsets used for the 59-channel EEG data from the
+SDU-MI database. The ﬁrst 18 electrode sets are manually
+designed, while the ﬁnal two sets are also generated by the
+same channel selection algorithm mentioned in[53], containing
+9 and 18 channels, respectively. The manually designed sub-
+sets systematically target symmetrical ERD/ERS patterns. For
+instance, some sets focus on the frontal lobes, as shown in set
+4o fF i g .5(b), and the occipital lobes, as in set 10 of Fig.5(b).
+They explore how these regions contribute to motor imagery
+tasks, even though primary ERD/ERS phenomena occur in the
+central sensorimotor areas. Furthermore, electrode subsets such
+as set 12 apply decimation strategies to reduce redundancy while
+maintaining hemispheric symmetry. By designing electrode sets
+that correspond to different spatial patterns and complement-
+ing them with automatic channel selection algorithms, we can
+Fig. 5. The electrode selection strategy for two datasets. (a) Ten elec-
+trode groups sets for BCI IV IIa dataset. (b) Twenty electrode groups
+sets for SDU-MI dataset.
+effectively enrich the spatial features extracted for various EEG-
+based tasks.
+C. Motor Imagery EEG Feature Extraction
+In this study, discriminative motor imagery EEG features are
+extracted by incorporating a divergence-based CSP algorithm
+with within-class regularization. This approach is designed for
+a binary classiﬁcation scenario with EEG data comprisingD
+channels. The aim of our methodology is the optimization of an
+orthogonal rotation matrixR ∈ RD×D, which is calibrated to
+simultaneously maximize the inter-class Kullback-Leibler (KL)
+divergence of covariance matrices and minimize the intra-class
+KL divergence.
+The objective functionJ(R) is as follows:
+J(R)=( 1 −λ)·DK
+(
+RT
+d Σ1Pd
+RT
+d Σ2Rd
+)
+−λ · 1
+2N
+C∑
+c=1
+N∑
+i=1
+DK
+(
+RT
+d Σi
+cRd
+RT
+d ΣcRd
+)
+, (1)
+where DK represents the KL divergence, Id is the identity
+matrix truncated tod dimensions, Rd = IdR is the truncatedR
+matrix. Σc, Σi
+c denote the average and trial-speciﬁc covariance
+matrices of classc, respectively, both pre-whitened by the ma-
+trix P =( Σ1 +Σ2)−1
+2 . Unlike the original CSP method which
+can be solved by a generalized eigenvalue decomposition and
+thus yields a closed-form solution, maximizing the divergence
+between distributions and integrating additional regularization
+terms does not yield a direct closed-form solution. Consequently,
+Authorized licensed use limited to: National Cheng Kung Univ.. Downloaded on November 13,2025 at 02:33:25 UTC from IEEE Xplore.  Restrictions apply. 
+4126 IEEE JOURNAL OF BIOMEDICAL AND HEALTH INFORMATICS, VOL. 29, NO. 6, JUNE 2025
+Algorithm 1:The Algorithm of divCSP.
+Require: X1 (EEG data for class 1),X2 (EEG data for
+class 2), dimensionalityd of the extracted subspace
+Ensure: Optimal spatial ﬁlter matrixWsf
+1: Calculate covariance matricesΣ1 for X1 and Σ2 for X2
+2: Compute whitening matrixP =( Σ1 +Σ2)−1
+2
+3: Initialize random orthogonal rotation matrixR0
+4: Apply whitening and rotationΣ∗
+1 = R0PΣ1PT RT
+0 ,
+Σ∗
+2 = R0PΣ2PT RT
+0
+5: repeat
+6: Compute the gradient ofJ(R) at the identity on the
+manifold
+7: Compute optimal step sizeU using line search
+8: Update the rotation matrixRk+1 = URk
+9: Rotate the matrices Σ∗
+1 = UΣ∗
+1UT , Σ∗
+2 = UΣ∗
+2UT
+10: until maximum iterations are reached
+11: Compute spatial ﬁlter matrixV T = IdRT
+k+1P
+12: Compute eigenvectorsE of V T Σ1 V
+13: Apply PCA:Wsf = VE
+gradient-based methods, such as manifold-constrained gradient
+descent, become indispensable. The comprehensive analysis of
+the gradient computation for the objective function and the
+detailed derivation process is thoroughly elaborated in[18].
+To optimizeJ(R), a subspace method is employed (see Algo-
+rithm 1), aiming to derived spatial ﬁlters within ad-dimensional
+subspace, thereby reﬁning the rotation matrixR. This is achieved
+through iterative updates, guided by the gradient ofJ(R), within
+a line search strategy on the manifold of the orthogonal matri-
+ces [54]. The process iterates until convergence.
+After optimization, the spatial ﬁlters Wsf are utilized to
+extract features, which are deﬁned as the normalized logarithm
+of the variance of the spatially ﬁltered EEG signals. Formally,
+the feature vector for theu-th Spatial-Frequency-Time (SFT)
+segment is calculated as:
+F(u) = −ln
+(
+Var(W(u)
+sf X(u))
+1
+d
+∑ d
+i=1 Var(W(i)
+sf X(u))
+)
+, (2)
+where Var(·) signiﬁes the variance operation over the spatially
+ﬁltered data. For our experimental setup, we empirically set the
+dimensionality d =4 and the regularization coefﬁcientλ =0 .1
+to balance the computational efﬁciency and feature discrim-
+inability effectively.
+D. Feature Selection Approach
+In this study, we proposed a wrapper-based feature selection
+algorithm for motor imagery EEG feature optimization. The core
+objective of the algorithm is to construct an optimized ensemble
+model with multiple sub-classiﬁers in spatial, temporal, and
+frequency domains. The detailed procedure of the algorithm is
+described in Algorithm2. Initially, the algorithm segments the
+EEG data across the spatial, frequency, and temporal domains,
+creating an array of SFTSs. Then, the discriminative MI EEG
+features of each segment are extracted using the divCSP algo-
+rithm for motor imagery EEG data. The extracted features are
+then classiﬁed using a linear SVM with a LOBO cross-validation
+scheme, providing a robust estimation of the classiﬁcation per-
+formance for each segment. Subsequently, the algorithm ranks
+these segments based on their classiﬁcation accuracies and it-
+eratively merges the top-performing segments to enhance the
+feature space with a step size ofD. This process involves con-
+catenating the high-dimensional features from selected SFTSs
+and re-evaluating the performance of the resemble model using
+linear SVM classiﬁers. The ﬁnal ensemble model comprises
+the top-K best-performing classiﬁers, each corresponding to a
+distinct set of SFTSs, ensuring a comprehensive representation
+of the EEG data. Considering the balance between accuracy
+and efﬁciency, the hyperparametersD and K are set to 5 and
+3, respectively. Note that the proposed wrapper-based feature
+selection algorithm only outputs the information of the selected
+SFTSs and the trained model weights in training stage, and no
+training data were used in the testing phase.
+E. Classiﬁcation Method
+SVM as a classic machine learning classiﬁer has been exten-
+sively applied in various motor imagery classiﬁcation tasks[20].
+It excels by optimizing the separation margin between distinct
+classes, effectively identifying the optimal decision boundary or
+hyperplane within the feature space. In this study, the efﬁcient
+linear SVM is leveraged to classify linearly separable EEG
+features. The linear kernel is deﬁned as:
+K(xi,x j)= xT
+i xj, (3)
+where K represents the kernel function, xi and xj are the
+i-th and j-th feature vectors. All hyperparameters employed
+match the default conﬁguration of the ’ﬁtclinear’ function
+in Matlab.
+In the testing phase of our proposed model, the classiﬁcation
+procedure is executed on testing sets to evaluate the general-
+izability and robustness of the trained ensemble model. Each
+classiﬁer in the optimized ensemble model, denoted as the top-K
+classiﬁers, is utilized to predict the class labels of the test data
+independently. Speciﬁcally, for each classiﬁer, the correspond-
+ing critical SFTS information is identiﬁed, and the SFTSs are
+extracted accordingly from the test data. Then, the divCSP
+features are derived from the extracted SFTSs. Subsequently,
+these features are fed into the respective linear SVM classiﬁer,
+yielding probability scores for speciﬁc classes. The ﬁnal pre-
+diction is determined by averaging these probabilities across
+all classiﬁers, thereby integrating their collective intelligence to
+enhance the prediction accuracy. For a detailed description of
+the testing phase, refer to Algorithm3.
+IV. R ESULTS
+This section illustrates the performance of the proposed MI-
+BCI approach on both BCI IV IIa dataset and SDU-MI dataset.
+Two metrics are used for model performance evaluation, namely,
+classiﬁcation accuracy and information transfer rate (ITR). De-
+tailly, the classiﬁcation accuracy quantiﬁes the proportion of
+correct predictions made by the model, while the ITR reﬂects
+Authorized licensed use limited to: National Cheng Kung Univ.. Downloaded on November 13,2025 at 02:33:25 UTC from IEEE Xplore.  Restrictions apply. 
+LIU et al.: FINE-GRAINED SPATIAL-FREQUENCY -TIME FRAMEWORK FOR MOTOR IMAGERY BRAIN–COMPUTER INTERFACE 4127
+Algorithm 2:The Proposed SFTSs Selection Algorithm.
+Require:
+EEG training dataset withNs segments, each with
+predeﬁned length and channels
+Corresponding labels of the EEG dataset
+Nc predeﬁned channel groups
+Nf predeﬁned frequency band groups
+Nt predeﬁned time window groups
+Ensure:
+Optimized ensemble ofK classiﬁers
+1: InitializeN = Nc ×Nf ×Nt SFTSs
+2: Create struct arraySeg of sizeN each with speciﬁc
+SFTS information
+3: Initialize accuracy arrayAcc of sizeN
+4: for i =1 to N do
+5: Extract SFTS based onSeg[i]
+- Select channel group
+- Apply band-pass ﬁlter for frequency band
+- Truncate signal using time window
+6: Extract subset EEG dataset for this SFTS
+7: Extract d-dimensional divCSP features
+8: Classify features using Linear SVM with LOBO
+cross-validation
+9: Store the average accuracy inAcc[i]
+10: end for
+11: SortAcc in descending order to obtainAcc∗, reorder
+Seg to getSeg∗
+12: Initialize merged accuracy arrayAccM
+13: Set countercount =0
+14: for j = D to N step D do
+15: count ← count +1
+16: Initialize feature set Fe a Se t
+17: for k =1 to j do
+18: Extract SFTS corresponding to Seg∗[k]
+19: Extract divCSP features and add them toFe a Se t
+20: end for
+21: Concatenate features in Fe a Se tto formFe a Me rge d
+22: Classify Fe a Me rge dusing Linear SVM with LOBO
+cross-validation
+23: Store the average accuracy inAccMerged [count]
+24: Save SFTS info and trained model
+25: end for
+26: SortAccMerged in descending order to get
+AccMerged ∗
+27: Select top-K accuracies with corresponding SFTSs info
+and models as ﬁnal model
+both accuracy and speed, measuring the efﬁciency of a BCI
+system in bits per minute[55].
+A. Results on BCI IV IIa Dataset
+Since this study focuses on the development of efﬁcient BCI
+algorithms, we mainly utilized the initial 1.5 seconds of motor
+imagery EEG data for training and testing, reporting the mean
+and overall accuracies achieved. To comprehensively demon-
+strate the efﬁcacy of the proposed method, we conducted seven
+ablation experiments, and the results are shown in TableI. These
+Algorithm 3:Testing Phase for the FGSFT-based MI-BCI.
+Require:
+Test EEG dataset
+Top-K optimized sub-classiﬁers with corresponding
+SFTS information
+Ensure:
+Predicted class for the test EEG dataset
+1: Initialize an empty listClassP rob
+2: for each classiﬁerCi in the top-K ensemble do
+3: Identify the SFTSs corresponding toCi
+4: Extract and concatenate divCSP features from the test
+EEG data for the selected SFTSs
+5: Use Ci to classify the features and obtain the class
+probabilities
+6: Append the obtained class probabilities toClassP rob
+7: end for
+8: Compute the average of probabilities inClassP robto
+get Pro b A vg
+9: Determine the predicted class based on the highest value
+in Pro b A vg
+11: returnPredicted class
+experiments individually segmented EEG data in the spatial
+domain, frequency domain, and time domain (denoted as exper-
+iments ‘S’, ’F’, ‘T’ in TableI), as well as in spatial-frequency,
+frequency-time, and spatial-time domains (represented as ex-
+periments ’SF’, ‘FT’, ’ST’ in TableI). The last experiment
+evaluates the performance of our proposed SFT method (indi-
+cated by experiment ‘SFT’ in TableI). For each experimental
+conﬁguration, the mean accuracies of LOBO cross-validation
+on both validation and test datasets are reported. We can see
+from Table I that, on the test dataset, the experiment of the
+proposed SFT method achieves the highest mean accuracy of
+83.68% on the test set, which is signiﬁcantly superior to that
+of the ’ST’ experiment at 77.66% (p =0 .0329, pairwiset-test)
+and the ‘SF’ experiment at 76.45% (p< 0.001, pairwiset-test).
+Owing to the limited number of EEG channels in the BCI IV
+IIa database (22 channels), the impact of spatial segmentation
+is not particularly signiﬁcant. Although the accuracy of the
+’SFT’ experiment (83.68%) exceeds that of the ‘FT’ (82.90%),
+the difference is not statistically signiﬁcant (p =0 .55, pairwise
+t-test). Due to the same reason, the overall accuracy of the ’STF’
+method (85.55%) is slightly lower than that of the ‘FT’ method
+(85.59%) (not statistically signiﬁcant,p =0 .96, pairwiset-test).
+Additionally, the results of the ’S’, ‘F’, ’T’ experiments suggest
+that for this dataset, the temporal segmentation of EEG data has
+the most signiﬁcant effect on classiﬁcation accuracy, followed
+by frequency domain segmentation, and ﬁnally spatial domain
+segmentation.
+The length of used EEG data affects the ITR performance. A
+longer EEG data length can include more useful EEG features
+but will also reduce the ITR performance, resulting in a higher
+delay for the designed BCI system. Fig.6 illustrates the classi-
+ﬁcation accuracy under different lengths of used EEG data. It
+is obvious that the longer EEG data length corresponds to the
+higher mean accuracy of both validation and testing accuracy.
+Employing EEG data spanning 0–3 seconds yields mean testing
+Authorized licensed use limited to: National Cheng Kung Univ.. Downloaded on November 13,2025 at 02:33:25 UTC from IEEE Xplore.  Restrictions apply. 
+4128 IEEE JOURNAL OF BIOMEDICAL AND HEALTH INFORMATICS, VOL. 29, NO. 6, JUNE 2025
+TABLE I
+THE AVERAGE ACCURACIES (%) OF DIFFERENT SEGMENTATIONSCHEMES ON VALIDATION AND TEST SETS OF BCI IV II A
+Fig. 6. The average accuracies and ITRs of different EEG lengths on
+validation and test sets of BCI IV IIa dataset.
+and validation accuracies of 88.48% and 91.44%, respectively.
+We also selected EEG data spanning 0.5–2.5 seconds commonly
+used in previous studies, yielding a validation accuracy of
+90.05% and a testing accuracy of 86.88%. However, when we
+consider the ITR performance, a shorter length of used EEG data
+is better. Utilizing EEG data from 0–1 seconds achieved an ITR
+of 27.59 bits/min and 20.49 bits/min on the validation and testing
+sets respectively, while data spanning 0–1.5 seconds resulted
+in ITRs of 20.36 bits/min and 15.77 bits/min correspondingly.
+A signiﬁcant decrement in ITR is observed with EEG data
+durations extending to 0–3 seconds, culminating in ITRs of
+13.20 bits/min and 10.96 bits/min for the validation and testing
+sets respectively.
+B. Results on SDU-MI Dataset
+For the SDU-MI dataset, six ablation experiments are also
+conducted to evaluate the effectiveness of the segmentation
+strategies across various domains, and the results are demon-
+strated in TableII. All three motor imagery tasks, including
+left-hand and elbow (LHE) vs. right-hand and elbow (RHE), left-
+hand (LH) vs. right-hand (RH), left-elbow (LE) vs. right-elbow
+(RE), are considered. Consistent with the results on BCI IV IIa
+dataset, our SFT approach obtains the best classiﬁcation perfor-
+mance for all three motor imagery tasks with a mean accuracy of
+78.25%, 80.80%, and 76.95%, respectively. In the last column of
+TableII, the overall mean accuracy over all three motor imagery
+tasks is computed. Statistical analysis suggests that the overall
+accuracy of our ‘SFT’ method (78.67%) is signiﬁcantly higher
+than that of the ’ST’ method (77.00%,p =0 .018, pairwise t-
+test), the ‘FT’ method (70.88%,p< 0.001, pairwiset-test), and
+the ’SF’ method (72.30%,p< 0.001, pairwiset-test). Aligning
+with ﬁndings from the BCI IV IIa dataset, the single-domain
+segmentation results on this dataset (i.e., results from ‘S’, ’F’,
+and ‘T’) also highlight that the time segmentation strategy
+contributes most signiﬁcantly to the enhancement of classiﬁ-
+cation accuracy for all three motor imagery tasks. However,
+Differing from the results on the BCI IV IIa dataset where spa-
+tial segmentation showed no signiﬁcant contribution to model
+accuracy improvement, the results from the SDU-MI dataset
+indicate that spatial segmentation substantially aids in accuracy
+enhancement, outperforming frequency segmentation. The over-
+all accuracy with the ’S’ method is signiﬁcantly higher than that
+of the ‘F’ method (68.07% vs. 64.12%,p =0 .0238, pairwise
+t-test). Furthermore, the joint-domain segmentation results (i.e.,
+results from ’SF’, ‘FT’, and ’ST’) suggested that the ‘ST’ method
+is signiﬁcantly higher than the ’FT’ method (77.00% vs. 70.88%,
+p =9 .23×10−6, pairwiset-test). These results demonstrate the
+effectiveness of spatial domain segmentation in enriching the
+feature set for enhanced model performance, particularly in EEG
+data with a large number of electrodes.
+Fig. 7 depicts the mean accuracy and ITR metrics of models
+with different lengths of used EEG data on SDU-MI dataset.
+In this experiment, the LHE vs. RHE motor imagery task is
+considered, and 50% of the training set is used for model
+evaluation to speed up the experiment. It can be seen that the
+longest-used EEG data corresponds to the highest mean accu-
+racy (76.05%) but the lowest mean ITR (6.17 b/min), while the
+shortest-used EEG data corresponds to the lowest mean accuracy
+(71.75%) but the highest mean ITR (12.82 b/min). Balanced
+performance is observed with EEG data segments spanning 0 to
+1.5 seconds, which provides a balanced compromise between
+mean classiﬁcation accuracy (74.90%) and ITR (11.13%).
+V. D ISCUSSIONS
+In this work, a ﬁne-grained spatial-frequency-time segmen-
+tation framework is proposed for efﬁcient motor imagery
+Authorized licensed use limited to: National Cheng Kung Univ.. Downloaded on November 13,2025 at 02:33:25 UTC from IEEE Xplore.  Restrictions apply. 
+LIU et al.: FINE-GRAINED SPATIAL-FREQUENCY -TIME FRAMEWORK FOR MOTOR IMAGERY BRAIN–COMPUTER INTERFACE 4129
+TABLE II
+THE AVERAGE ACCURACIES (%) OF DIFFERENT SEGMENTATIONSCHEMES ON SDU-MI DATASET
+Fig. 7. The average accuracies and ITRs of different EEG lengths on
+SDU-MI database.
+BCI. The proposed FGSFT method ﬁrst decomposes the input
+EEG signals into multiple SFTSs and then the divCSP with
+intra-class regularization algorithm is applied to those SFTSs to
+obtain robust EEG features during motor imagery. A dedicated
+wrapper-based SFTS selection algorithm is designed to select
+the most signiﬁcant features in time, frequency, and spatial do-
+mains. Results show that the proposed framework can effectively
+improve the overall performance of MI-BCI.
+Although some previous works also proposed various seg-
+mentation strategies in time domain[12], [20], their selected
+window length was not narrow enough to capture ﬁne-grained
+and multi-scale EEG features, challenging to achieve optimal
+accuracy. In this study, we propose to segment the raw EEG
+signals with a ﬁne-grained and multi-scale strategy in time
+domains, where the shortest window length is deﬁned as 200 ms.
+Fig. 8 illustrates the performance of the proposed method under
+various temporal segmentation strategies. Both multi-scale and
+single-scale segmentation strategies were considered. The multi-
+scale segmentation strategy considered the shortest duration
+Fig. 8. The performance of the proposed method on the validation
+set and test set of BCI IV IIa database with different ﬁne-grained seg-
+mentation strategies in the time domain. The dashed lines indicate the
+performance obtained by multi-scale temporal segmentation strategies,
+while the solid lines indicate the performance achieved by single-scale
+temporal segmentation strategies.
+scale of a segment and the time segmentation strategies of
+all scales above this scale. For example, under the multi-scale
+segmentation strategy, the minimal duration of a 0.2 s segment
+includes all segmentation strategies in time domain at the scales
+of 0.2 s, 0.4 s, 0.7 s, 1 s, 1.25 s, and 1.5 s. In contrast, single-scale
+segmentation only considers all time segmentation strategies at
+the shortest duration scale of a segment. It is shown in Fig.8
+that the single-scale of 0.2 s achieves the best performance in
+cross-session evaluation (The model is evaluated on the test
+set), and the more ﬁne-grained scale of 0.1 s is too short to
+obtain useful EEG features. In within-session evaluation (The
+model is evaluated on the validation set), the single-scale of
+0.7 s has the best performance. It can also be observed that
+the multi-scale segmentation strategy can enhance the model
+accuracy, especially in within-session evaluation. Although the
+Authorized licensed use limited to: National Cheng Kung Univ.. Downloaded on November 13,2025 at 02:33:25 UTC from IEEE Xplore.  Restrictions apply. 
+4130 IEEE JOURNAL OF BIOMEDICAL AND HEALTH INFORMATICS, VOL. 29, NO. 6, JUNE 2025
+TABLE III
+PERFORMANCE COMPARISONS ON BCI IV II A DATASET
+Fig. 9. The ﬁne-grained weighted MI-TFRMs for two databases.
+multi-scale time segmentation strategy with a scale of 0.1 s
+achieves a slightly higher accuracy on both the validation set
+and the test set, its computational complexity is substantial and
+the performance improvement is not signiﬁcant. Therefore, we
+chose the multi-scale time segmentation strategy of 0.2 s in this
+study. On the other hand, our previous study suggested that
+the multi-scale frequency segmentation method signiﬁcantly
+improved the accuracy of MI-BCI[46]. Accordingly, we adopted
+the same multi-scale segmentation strategy in the frequency
+domain in this work. Besides, a novel segmentation strategy im-
+plemented by manual and automatic channel selection methods
+is proposed, effectively enriching EEG features. The results de-
+scribed in TablesI and II suggest that the segmentation strategy
+in time domain plays a key role, and the spatial segmentation
+strategy is essential when the number of EEG electrodes is high.
+These results manifest the signiﬁcance of our ﬁne-grained and
+multi-scale segmentation strategies to MI-BCI research, provid-
+ing a foundational framework for subsequent studies to enhance
+the accuracy and functionality of future MI-BCI systems.
+Table III illustrates the comprehensive performance compar-
+ison between the proposed FGSFT method and other recently
+proposed and classic MI-BCI algorithms on BCI IV IIa dataset. It
+can be observed that the proposed FGSFT methods are superior
+to other MI-BCI methods in both accuracy and ITR metrics. Par-
+ticularly, the average accuracy of FGSFT method with a selected
+window of 0–3 seconds (88.48%) is signiﬁcantly higher than
+other comparison methods (p< 0.05, pairwiset-test), while the
+average ITR of FGSFT method with a selected window of 0–1.5
+seconds (15.64 b/min) is signiﬁcantly higher than other com-
+pared methods (p< 0.05, pairwiset-test). Among these works,
+some also adopted segmentation strategies in time, frequency, or
+spatial domain. Zhang et al.[42] and Zheng et al.[43] applied the
+CSP-based time-frequency optimization with 5 time intervals
+and 17 frequency bands. Malan et al.[44] presented a CSP-based
+time-frequency optimization strategy with 6 time intervals and
+3 frequency bands. Concurrently, Gaur et al.[45] proposed a
+sliding window CSP method where 9 overlapped time intervals
+were used for temporal optimization. Besides, Tiwari et al.[46]
+integrated channel selection algorithms with the RCSP method,
+while Ghorbanzadeh et al.[47] and Wang et al.[48] combined
+the channel selection algorithms with deep learning models,
+achieving spatial optimization of EEG. However, these methods
+cannot obtain the ﬁne-grained spatial-frequency-time features
+as attained in this work, limiting their interpretability as well
+as classiﬁcation accuracy and ITR. These comparative results
+demonstrated that the proposed FGSFT framework sets a new
+benchmark in binary motor imagery tasks, achieving state-of-
+the-art performance. Its ability to accurately segment and utilize
+the EEG signal components signiﬁcantly enhances the overall
+effectiveness of MI-BCI systems, paving the way for more
+accurate and efﬁcient BCI applications.
+The visualization of the ﬁne-grained MI-TFRM reﬂects the re-
+action intensity of a subject in time and frequency domains[20].
+In the ﬁne-grained MI-TFRM, each pixel is weighted by the
+mean LOBO cross-validation accuracy value of all its cor-
+responding SFTSs. The ﬁne-grained MI-TFRMs for subjects
+in the two datasets are depicted in Fig. 9. In our previous
+work, the MI-TFRMs were proposed, but the time-frequency
+resolution was relatively low. The comparison between the
+traditional MI-TFRMs presented in our previous work [20]
+and the ﬁne-grained MI-TFRMs for subjects in the BCI IV
+IIa dataset is shown in Fig.10. Clearly, with the ﬁne-grained
+segmentation strategy applied in time and frequency domains,
+the resolution of the ﬁne-grained MI-TFRMs is signiﬁcantly
+enhanced. With these high-resolution ﬁne-grained MI-TFRMs,
+more evident individual differences can be observed and
+analyzed. For example, the A-3 subject mainly activates the
+alpha band (around 10 Hz) during the motor imagery task, while
+A-5 exhibits spectral activations in the gamma band (around
+Authorized licensed use limited to: National Cheng Kung Univ.. Downloaded on November 13,2025 at 02:33:25 UTC from IEEE Xplore.  Restrictions apply. 
+LIU et al.: FINE-GRAINED SPATIAL-FREQUENCY -TIME FRAMEWORK FOR MOTOR IMAGERY BRAIN–COMPUTER INTERFACE 4131
+Fig. 10. The resolution comparison between ﬁne-grained MI-TFRMs and traditional MI-TFRMs in BCI IV IIa dataset. (a) The ﬁne-grained MI-
+TFRMs generated with the proposed FGSFT method. (b) The traditional MI-TFRMs generated using multiscale time-frequency method [20].
+Fig. 11. The time-frequency topographical maps. (a) The time-
+frequency topographical map (left) and the electrode group signiﬁcance
+map (right) for the 8-th subject in BCI IV IIa dataset. (b) The time-
+frequency topographical map (left) and the electrode group signiﬁcance
+map (right) for the ﬁrst subject in SDU-MI dataset.
+30 Hz). Because a ﬁne-grained spatial segmentation is conducted
+in this study, a more informative time-frequency topographical
+map can be visualized for each subject. From Fig.11(a), it can
+be found that the cerebral cortex is signiﬁcantly activated in the
+alpha band during 1.5–2.0 seconds, and the occipital area con-
+tributes the most. The time-frequency topographical map shown
+in Fig.11(b) reveals that in 0.5–1.0 seconds, the theta band is
+activated, with a whole-brain activation pattern. From 1.5 to 3.0
+seconds, the high-beta band and gamma band in the pre-frontal
+lobe contain the most discriminative EEG features of motor
+imagery tasks. These informative time-frequency topographic
+maps reveal ﬁne-grained individual differences in the neural
+mechanisms underlying motor imagery tasks. It is suggested
+Fig. 12. The feature selection procedure for all subjects in SDU-MI
+dataset. The red line indicates the accuracy of sorted single SFTSs,
+while the blue line indicates the accuracy of merged SFTSs. The stars
+point out the selected top-3 accuracy, and the dashed line indicates the
+peak accuracy of merged SFTSs.
+Authorized licensed use limited to: National Cheng Kung Univ.. Downloaded on November 13,2025 at 02:33:25 UTC from IEEE Xplore.  Restrictions apply. 
+4132 IEEE JOURNAL OF BIOMEDICAL AND HEALTH INFORMATICS, VOL. 29, NO. 6, JUNE 2025
+that the brain regions activated during motor imagery tasks vary
+across individuals in terms of timing and EEG frequency bands,
+indicating the necessity of applying segmentation in spatial
+domain. Neural activity associated with motor imagery is not
+conﬁned to the central brain regions but may also manifest
+in the prefrontal and occipital lobes. This phenomenon might
+be linked to the participants’ dominant hand preferences and
+the involvement of complex limb motor imagery[56], [57].
+Therefore, the time-frequency topographical map can be used to
+effectively analyze the dynamic pattern of cognitive processes
+during motor imagery tasks, offering profound insights into the
+neural correlation undergoing motor imagery.
+To better illustrate the feature selection procedure of the
+proposed method, Fig. 12 visualizes the details of the fea-
+ture selection procedure in SDU-MI dataset. It can be seen
+that although a large amount of SFTSs are generated by the
+spatial-frequency-time framework, the proposed feature selec-
+tion method effectively selects a small portion (3%–20%) of the
+SFTSs with discriminative EEG features, signiﬁcantly reducing
+the feature dimensionality, and thus making the motor imagery
+BCI system more efﬁcient.
+VI. C ONCLUSION
+In this work, a novel MI-BCI algorithm based on a ﬁne-
+grained spatial-frequency-time framework has been proposed.
+The algorithm was evaluated on the publicly available BCI IV IIa
+dataset and SDU-MI dataset collected by ourselves with multiple
+binary motor imagery paradigms, obtaining a state-of-the-art
+average ITR. An EEG spatial segmentation technique combined
+with manual and automatic channel selection processes was
+proposed, while ﬁne-grained and multi-scale EEG segmentation
+strategies in time and frequency domains were presented. Mean-
+while, the divCSP with intra-class regularization was employed
+to extract robust EEG features. The iterative reﬁnement and
+selection of top-performing SFTSs were adopted to construct
+a robust ensemble of SVM classiﬁers to ensure the effectiveness
+of our model. Additionally, the high-resolution ﬁne-grained MI-
+TFRMs and time-frequency topographical maps were visualized
+according to the proposed feature ranking algorithms, signiﬁ-
+cantly enhancing the interpretability of the model by depicting
+the dynamic cognitive processes during motor imagery tasks.
+This work not only offers a more accurate and efﬁcient BCI
+framework but also can contribute to elucidating subject-speciﬁc
+neural mechanisms related to motor imagery. Through the pro-
+posed ﬁne-grained spatial-frequency-time feature selection ap-
+proach, the individual differences in the brain activities during
+the motor imagery task can be well visualized, facilitating the
+design of personalized MI-BCI systems. Future work will focus
+on enhancing cross-subject generalization by transfer learning
+fused with time-frequency topographical maps and extending
+the framework to multi-class paradigms and real-world appli-
+cations, paving the way for more effective and adaptable BCI
+systems.
+REFERENCES
+[1] C. Guger, H. Ramoser, and G. Pfurtscheller, “Real-time EEG analysis
+with subject-speciﬁc spatial patterns for a brain-computer interface (BCI),”
+IEEE Trans. Rehabil. Eng., vol. 8, no. 4, pp. 447–456, Dec. 2000.
+[2] U. Chaudhary, N. Birbaumer, and A. Ramos-Murguialday, “Brain–
+computer interfaces for communication and rehabilitation,”Nature Rev.
+Neurol., vol. 12, no. 9, pp. 513–525, 2016.
+[3] G. Pfurtscheller, “EEG event-related desynchronization (ERD) and
+synchronization (ERS),” Electroencephalogr. Clin. Neuriophysiol. ,
+vol. 103, p. 26, 1997. [Online]. Available: https://www.infona.pl/resource/
+bwmeta1.element.elsevier-932da8ce-8161-35fe-afd2-3f9f63f14c0c
+[4] M. A. Khan, R. Das, H. K. Iversen, and S. Puthusserypady, “Review on
+motor imagery based BCI systems for upper limb post-stroke neuroreha-
+bilitation: From designing to application,”Comput. Biol. Med., vol. 123,
+2020, Art. no. 103843.
+[5] Y . LeCun, Y . Bengio, and G. Hinton, “Deep learning,”Nature, vol. 521,
+no. 7553, pp. 436–444, 2015.
+[6] Z. Khademi, F. Ebrahimi, and H. M. Kordy, “A review of critical challenges
+in MI-BCI: From conventional to deep learning methods,”J. Neurosci.
+Methods, vol. 383, 2023, Art. no. 109736.
+[7] W. Zhao, X. Jiang, B. Zhang, S. Xiao, and S. Weng, “CTNet: A convolu-
+tional transformer network for EEG-based motor imagery classiﬁcation,”
+Sci. Rep., vol. 14, no. 1, 2024, Art. no. 20237.
+[8] R. Zhang, G. Liu, Y . Wen, and W. Zhou, “Self-attention-based convo-
+lutional neural network and time-frequency common spatial pattern for
+enhanced motor imagery classiﬁcation,”J. Neurosci. Methods, vol. 398,
+Oct. 2023, Art. no. 109953.
+[9] B. Xua and G. Yang, “Interpretability research of deep learning: A litera-
+ture survey,”Inf. Fusion, 2024, vol. 115, Art. no. 102721.
+[10] Q. Novi, C. Guan, T. H. Dat, and P. Xue, “Sub-band common spatial pattern
+(SBCSP) for brain-computer interface,” inProc. 2007 3rd Int. IEEE/EMBS
+Conf. Neural Eng., 2007, pp. 204–207.
+[11] K. K. Ang, Z. Y . Chin, H. Zhang, and C. Guan, “Filter bank common
+spatial pattern (FBCSP) in brain-computer interface,” inProc. 2008 IEEE
+Int. Joint Conf. Neural Netw. (IEEE World Congr. Comput. Intell.), 2008,
+pp. 2390–2397.
+[12] Y . Y . Miao et al., “Learning common time-frequency-spatial patterns for
+motor imagery classiﬁcation,”IEEE Trans. Neural Syst. Rehabil. Eng.,
+vol. 29, pp. 699–707, 2021.
+[13] J. Wang, Z. R. Feng, X. D. Ren, N. Lu, J. Luo, and L. Sun, “Feature
+subset and time segment selection for the classiﬁcation of EEG data
+based motor imagery,”Biomed. Signal Process. Control, vol. 61, 2020,
+Art. no. 102026.
+[14] Z. J. Koles, M. S. Lazar, and S. Z. Zhou, “Spatial patterns underlying
+population differences in the background EEG,”Brain Topogr.,v o l .2 ,
+no. 4, pp. 275–284, 1990.
+[15] F. Lotte and C. Guan, “Regularizing common spatial patterns to improve
+BCI designs: Uniﬁed theory and new algorithms,”IEEE Trans. Biomed.
+Eng., vol. 58, no. 2, pp. 355–362, Feb. 2011.
+[16] J. Park and W. Chung, “Common spatial patterns based on generalized
+norms,” in Proc. 2013 Int. Winter Workshop Brain-Comput. Interface,
+2013, pp. 39–42.
+[17] Q. Cai, W. Gong, Y . Deng, and H. Wang, “Single-trial EEG classiﬁca-
+tion via common spatial patterns with mixed Lp-and Lq-norms,”Math.
+Problems Eng., vol. 2021, pp. 1–13, 2021.
+[18] W. Samek, M. Kawanabe, and K.-R. Müller, “Divergence-based frame-
+work for common spatial patterns algorithms,”IEEE Rev. Biomed. Eng.,
+vol. 7, pp. 50–72, 2014.
+[19] W. Samek, D. Blythe, K. -R. Müller, and M. Kawanabe, “Robust spatial
+ﬁltering with beta divergence,” inProc. Adv. Neural Inf. Process. Syst.,
+2013, vol. 26, pp. 1007–1015.
+[20] G. Liu, L. Tian, and W. Zhou, “Multiscale time-frequency method for
+multiclass motor imagery brain computer interface,”Comput. Biol. Med.,
+vol. 143, 2022, Art. no. 105299.
+[21] G. Liu, J. H. Hsiao, W. Zhou, and L. Tian, “MartMi-BCI: A matlab-based
+real-time motor imagery brain-computer interface platform,”SoftwareX,
+vol. 22, 2023, Art. no. 101371.
+[22] F. Yger, M. Berar, and F. Lotte, “Riemannian approaches in brain-computer
+interfaces: A review,”IEEE Trans. Neural Syst. Rehabil. Eng., vol. 25,
+no. 10, pp. 1753–1762, Oct. 2017.
+[23] T. Qu, J. Jin, R. Xu, X. Wang, and A. Cichocki, “Riemannian dis-
+tance based channel selection and feature extraction combining dis-
+criminative time-frequency bands and Riemannian tangent space for
+MI-BCIs,” J. Neural Eng., vol. 19, no. 5, Sep. 2022, Art. no. 056025,
+doi: 10.1088/1741-2552/ac9338.
+[24] F. Yger, F. Lotte, and M. Sugiyama, “Averaging covariance ma-
+trices for EEG signal classiﬁcation based on the CSP: An em-
+pirical study,” in Proc. 23rd Eur. Signal Process. Conf. , 2015,
+pp. 2721–2725.
+Authorized licensed use limited to: National Cheng Kung Univ.. Downloaded on November 13,2025 at 02:33:25 UTC from IEEE Xplore.  Restrictions apply. 
+LIU et al.: FINE-GRAINED SPATIAL-FREQUENCY -TIME FRAMEWORK FOR MOTOR IMAGERY BRAIN–COMPUTER INTERFACE 4133
+[25] H. Altaheri et al., “Deep learning techniques for classiﬁcation of elec-
+troencephalogram (EEG) motor imagery (MI) signals: A review,”Neural
+Comput. Appl., vol. 35, no. 20, pp. 14681–14722, 2023.
+[26] V . J. Lawhern, A. J. Solon, N. R. Waytowich, S. M. Gordon, C. P. Hung,
+and B. J. Lance, “EEGNet: A compact convolutional network for EEG-
+based brain-computer interfaces,”J. Neural Eng., vol. 15, no. 5, 2016,
+doi: 10.1088/1741-2552/aace8c.
+[27] F. Li, F. He, F. Wang, D. Zhang, Y . Xia, and X. Li, “A novel simpliﬁed
+convolutional neural network classiﬁcation algorithm of motor imagery
+EEG signals based on deep learning,”Appl. Sci., vol. 10, no. 5, 2020,
+Art. no. 1605.
+[28] S. U. Amin, M. Alsulaiman, G. Muhammad, M. A. Mekhtiche, and M.
+S. Hossain, “Deep learning for EEG motor imagery classiﬁcation based
+on multi-layer CNNs feature fusion,”Future Gener. Comput. Syst.-Int. J.
+Escience, vol. 101, pp. 542–554, Dec. 2019.
+[29] M.-A. Li, J.-F. Han, and L.-J. Duan, “A novel MI-EEG imaging with the
+location information of electrodes,”IEEE Access, vol. 8, pp. 3197–3211,
+2020.
+[30] P. Wang, A. Jiang, X. Liu, J. Shang, and L. Zhang, “LSTM-based EEG
+classiﬁcation in motor imagery tasks,”IEEE Trans. Neural Syst. Rehabil.
+Eng., vol. 26, no. 11, pp. 2086–2095, Nov. 2018.
+[31] S. Kumar, A. Sharma, and T. Tsunoda, “Brain wave classiﬁcation using
+long short-term memory network based optical predictor,”Sci. Reports,
+vol. 9, no. 1, 2019, Art. no. 9153.
+[32] H. Altaheri, G. Muhammad, and M. Alsulaiman, “Physics-informed at-
+tention temporal convolutional network for EEG-based motor imagery
+classiﬁcation,”IEEE Trans. Ind. Informat., vol. 19, no. 2, pp. 2249–2258,
+Feb. 2023.
+[33] X. Shi, B. Li, W. Wang, Y . Qin, H. Wang, and X. Wang, “EEG-VTTCNet:
+A loss joint training model based on the vision transformer and the tem-
+poral convolution network for EEG-based motor imagery classiﬁcation,”
+Neuroscience, vol. 556, pp. 42–51, 2024.
+[34] K. Liu et al., “MSVTNet: Multi-scale vision transformer neural network
+for EEG-based motor imagery decoding,”IEEE J. Biomed. Health Infor-
+mat., vol. 28, no. 12, pp. 7126–7137, Dec. 2024.
+[35] J. Jiang, C. H. Wang, J. H. Wu, W. Qin, M. P. Xu, and E. W. Yin,
+“Temporal combination pattern optimization based on feature selection
+method for motor imagery BCIs,”Front. Hum. Neurosci., vol. 14, 2020,
+Art. no. 231.
+[36] Y . Pei et al., “A tensor-based frequency features combination method
+for brain-computer interfaces,”IEEE Trans. Neural Syst. Rehabil. Eng.,
+vol. 30, pp. 465–475, 2022.
+[37] L. L. Chen et al., “Adaptive asynchronous control system of robotic arm
+based on augmented reality-assisted brain-computer interface,”J. Neural
+Eng., vol. 18, no. 6, 2021, Art. no. 066005.
+[38] J. Jin, T. Qu, R. Xu, X. Wang, and A. Cichocki, “Motor imagery EEG
+classiﬁcation based on Riemannian sparse optimization and dempster-
+shafer fusion of multi-time-frequency patterns,”IEEE Trans. Neural Syst.
+Rehabil. Eng., vol. 31, pp. 58–67, 2023.
+[39] X. Ding, L. Yang, and C. Li, “Study of MI-BCI classiﬁcation method
+based on the Riemannian transform of personalized EEG spatiotem-
+poral features,” Math. Biosci. Eng., vol. 20, no. 7, pp. 12454–12471,
+2023.
+[40] A. M. Roy, “An efﬁcient multi-scale CNN model with intrinsic fea-
+ture integration for motor imagery EEG subject classiﬁcation in brain-
+machine interfaces,” Biomed. Signal Process. Control, vol. 74, 2022,
+Art. no. 103496.
+[41] Y . Pei et al., “Data augmentation: Using channel-level recombination to
+improve classiﬁcation performance for motor imagery EEG,”Front. Hum.
+Neurosci., vol. 15, 2021, Art. no. 645952.
+[42] Y . Zhang, C. S. Nam, G. X. Zhou, J. Jin, X. Y . Wang, and A. Cichocki,
+“Temporally constrained sparse group spatial patterns for motor imagery
+BCI,”IEEE Trans. Cybern., vol. 49, no. 9, pp. 3322–3332, Sep. 2019.
+[43] L. S. Zheng et al., “A power spectrum pattern difference-based time-
+frequency sub-band selection method for MI-EEG classiﬁcation,”IEEE
+Sensors J., vol. 22, no. 12, pp. 11928–11939, Jun. 2022.
+[44] N. S. Malan and S. Sharma, “Time window and frequency band optimiza-
+tion using regularized neighbourhood component analysis for multi-view
+motor imagery EEG classiﬁcation,” Biomed. Signal Process. Control,
+vol. 67, 2021, Art. no. 102550.
+[45] P. Gaur, H. Gupta, A. Chowdhury, K. McCreadie, R. B. Pachori, and H.
+Wang, “A sliding window common spatial pattern for enhancing motor
+imagery classiﬁcation in EEG-BCI,”IEEE Trans. Instrum. Meas., vol. 70,
+2021, Art. no. 4002709.
+[46] A. Tiwari and A. Chaturvedi, “Automatic EEG channel selection for
+multiclass brain-computer interface classiﬁcation using multiobjective
+improved ﬁreﬂy algorithm,” Multimedia Tools Appl., vol. 82, no. 4,
+pp. 5405–5433, 2023.
+[47] G. Ghorbanzadeh, Z. Nabizadeh, N. Karimi, P. Khadivi, A. Emami, and
+S. Samavi, “DGAFF: Deep genetic algorithm ﬁtness formation for EEG
+bio-signal channel selection,”Biomed. Signal Process. Control, vol. 79,
+2023, Art. no. 104119.
+[48] X. Y . Wang, M. Hersche, M. Magno, and L. Benini, “MI-BMInet: An
+efﬁcient convolutional neural network for motor imagery brainmachine
+interfaces with EEG channel selection,”IEEE Sensors J., vol. 24, no. 6,
+pp. 8835–8847, Mar. 2024.
+[49] A. Jiang, J. Shang, X. Liu, Y . Tang, H. K. Kwan, and Y . Zhu, “Efﬁcient CSP
+algorithm with spatio-temporal ﬁltering for motor imagery classiﬁcation,”
+IEEE Trans. Neural Syst. Rehabil. Eng., vol. 28, no. 4, pp. 1006–1016,
+Apr. 2020.
+[50] T.-j. Luo, “Selective multi–view time–frequency decomposed spatial fea-
+ture matrix for motor imagery EEG classiﬁcation,”Expert Syst. With Appl.,
+vol. 247, 2024, Art. no. 123239.
+[51] K. K. Ang, Z. Y . Chin, C. C. Wang, C. T. Guan, and H. H. Zhang, “Filter
+bank common spatial pattern algorithm on BCI competition IV datasets 2a
+and 2b,”Front. Neurosci., vol. 6, 2012. [Online]. Available: https://www.
+frontiersin.org/articles/10.3389/fnins.2012.00039/full
+[52] C. Brunner, R. Leeb, G. Müller-Putz, A. Schlögl, and G. Pfurtscheller,
+“BCI competition 2008–graz data set A,” Inst. Knowl. Discov. (Lab
+Brain-Comput. Interfaces), Graz Univ. Technol. , vol. 16, pp. 1–6,
+2008.
+[53] J. Jin, Y . Y . Miao, I. Daly, C. L. Zuo, D. W. Hu, and A. Cichocki,
+“Correlation-based channel selection and regularized feature optimization
+for mi-based BCI,”Neural Netw., vol. 118, pp. 262–270, 2019.
+[54] P. von Bünau, “Stationary subspace analysis: Towards understanding
+non-stationary data,” thesis, V on der Fakultät IV—Elektrotechnik und
+Informatik der Technischen Universität Berlin, Berlin, 2012.
+[55] D. J. McFarland, W. A. Sarnacki, and W. Jr, “Brain-computer interface
+(BCI) operation: Optimizing information transfer rates,”Biol. Psychol.,
+vol. 63, no. 3, pp. 237–251, 2003.
+[56] W. Yi, S. Qiu, H. Qi, L. Zhang, B. Wan, and D. Ming, “EEG feature com-
+parison and classiﬁcation of simple and compound limb motor imagery,”
+J. Neuroengineering Rehabil., vol. 10, pp. 1–12, 2013.
+[57] D. Zapała, P. Iwanowicz, P. Francuz, and P. Augustynowicz, “Handedness
+effects on motor imagery during kinesthetic and visual-motor conditions,”
+Sci. Reports, vol. 11, no. 1, 2021, Art. no. 13112.
+[58] F. Lotte and C. Guan, “Spatially regularized common spatial patterns
+for EEG classiﬁcation,” inProc. 20th Int. Conf. Pattern Recognit., 2010,
+pp. 3712–3715.
+[59] M. Arvaneh, C. T. Guan, K. K. Ang, and H. C. Quek, “Spatially sparsed
+common spatial pattern to improve BCI performance,” inProc. IEEE Int.
+Conf. Acoustics, Speech, Signal Process., 2011, pp. 2412–2415.
+[60] F. Alimardani, R. Boostani, and B. Blankertz, “Weighted spatial based
+geometric scheme as an efﬁcient algorithm for analyzing single-trial EEGs
+to improve cue-based BCI classiﬁcation,”Neural Netw., vol. 92, pp. 69–76,
+2017.
+[61] P. Gaur, R. B. Pachori, H. Wang, and G. Prasad, “A multi-class EEG-
+based BCI classiﬁcation using multivariate empirical mode decomposition
+based ﬁltering and Riemannian geometry,”Expert Syst. Appl., vol. 95,
+pp. 201–211, 2018.
+[62] A. Singh, S. Lal, and H. W. Guesgen, “Small sample motor imagery
+classiﬁcation using regularized Riemannian features,”IEEE Access,v o l .7 ,
+pp. 46858–46869, 2019.
+[63] Z. H. Yu, T. Ma, N. Fang, H. X. Wang, Z. L. Li, and H. Fan, “Local
+temporal common spatial patterns modulated with phase locking value,”
+Biomed. Signal Process. Control, vol. 59, 2020, Art. no. 101882.
+[64] V . Srimadumathi and M. R. Reddy, “Classiﬁcation of motor imagery
+EEG signals using high resolution time-frequency representations and
+convolutional neural network,”Biomed. Phys. Eng. Exp., vol. 10, no. 3,
+2024, Art. no. 035025.
+Authorized licensed use limited to: National Cheng Kung Univ.. Downloaded on November 13,2025 at 02:33:25 UTC from IEEE Xplore.  Restrictions apply. 
