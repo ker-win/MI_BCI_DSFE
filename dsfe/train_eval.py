@@ -57,13 +57,53 @@ def evaluate_session(subject_id, session_id=None):
         band_fta = config.DEFAULT_BAND
         
         if config.USE_FTA:
-            if config.USE_FDCC:
-                print("    [FDCC] Selecting band for FTA...")
-                band_fta = fdcc.fdcc_select_band(X_train, y_train, fs_raw, 'fta')
-                print(f"      Best band (FTA): {band_fta}")
-            
-            F_fta_train = features.compute_fta_features(X_train, fs_raw, band_fta)
-            F_fta_test = features.compute_fta_features(X_test, fs_raw, band_fta)
+            if config.USE_MULTI_WINDOW:
+                print(f"    [Multi-Window] Extracting FTA features from {len(config.TIME_WINDOWS)} windows...")
+                
+                # Helper to extract features for a specific window
+                def extract_window_features(X_in, t_start, t_end):
+                    # Calculate indices relative to the epoch start (config.EPOCH_TMIN)
+                    # Note: X_in is already sliced from EPOCH_TMIN to EPOCH_TMAX
+                    # We need to map t_start (relative to cue) to index in X_in
+                    
+                    # Time relative to epoch start
+                    rel_start = t_start - config.EPOCH_TMIN
+                    rel_end = t_end - config.EPOCH_TMIN
+                    
+                    idx_start = int(rel_start * fs_raw)
+                    idx_end = int(rel_end * fs_raw)
+                    
+                    # Clamp indices
+                    idx_start = max(0, idx_start)
+                    idx_end = min(X_in.shape[-1], idx_end)
+                    
+                    if idx_start >= idx_end:
+                         raise ValueError(f"Invalid window indices: {idx_start} to {idx_end} (Time: {t_start}-{t_end})")
+
+                    X_window = X_in[..., idx_start:idx_end]
+                    return features.compute_fta_features(X_window, fs_raw, config.DEFAULT_BAND)
+
+                train_feats_list = []
+                test_feats_list = []
+                
+                for (t_start, t_end) in config.TIME_WINDOWS:
+                    # print(f"      Processing window {t_start}-{t_end}s...")
+                    train_feats_list.append(extract_window_features(X_train, t_start, t_end))
+                    test_feats_list.append(extract_window_features(X_test, t_start, t_end))
+                
+                # Concatenate features from all windows
+                F_fta_train = np.concatenate(train_feats_list, axis=1)
+                F_fta_test = np.concatenate(test_feats_list, axis=1)
+                
+            else:
+                # Original Single Window Logic
+                if config.USE_FDCC:
+                    print("    [FDCC] Selecting band for FTA...")
+                    band_fta = fdcc.fdcc_select_band(X_train, y_train, fs_raw, 'fta')
+                    print(f"      Best band (FTA): {band_fta}")
+                
+                F_fta_train = features.compute_fta_features(X_train, fs_raw, band_fta)
+                F_fta_test = features.compute_fta_features(X_test, fs_raw, band_fta)
             
         # RG
         F_rg_train = None

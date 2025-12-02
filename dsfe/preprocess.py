@@ -24,26 +24,12 @@ def preprocess_data(X, y, fs):
     X_avg = X - np.mean(X, axis=1, keepdims=True)
     
     # 2. Epoching / Slicing
-    # The raw data loaded might be longer than we need.
-    # config.EPOCH_TMIN and config.EPOCH_TMAX define the window relative to cue.
-    # Assuming the loaded X starts at cue (0s) or we need to adjust.
-    # Based on load_data.py, it extracts from 'start' to 'stop'.
-    # 'start' is events_position.
-    # We need to ensure we slice exactly [tmin, tmax].
+    # The data loaded by io.load_subject_data (via MotorImageryDataset.get_epochs)
+    # is ALREADY sliced from config.EPOCH_TMIN to config.EPOCH_TMAX.
+    # So X starts at EPOCH_TMIN, not 0.
+    # We do not need to slice again using TMIN as an offset.
     
-    # Calculate samples
-    n_samples = X.shape[2]
-    t_start = 0.0 # Assuming X starts at 0
-    
-    # If we want 0 to 0.85s
-    idx_start = int(config.EPOCH_TMIN * fs)
-    idx_end = int(config.EPOCH_TMAX * fs)
-    
-    if idx_end > n_samples:
-        print(f"Warning: Desired epoch length ({idx_end}) exceeds data length ({n_samples}). Using available length.")
-        idx_end = n_samples
-        
-    X_sliced = X_avg[:, :, idx_start:idx_end]
+    X_sliced = X_avg
     
     # 3. Lowpass Filtering
     # We can use MNE for filtering or scipy.

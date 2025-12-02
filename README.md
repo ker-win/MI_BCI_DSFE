@@ -18,3 +18,8 @@ class Args:
 
 - **`4_class`**: Classifies 4 motor imagery tasks: Left Hand, Right Hand, Foot, Tongue.
 - **`2_class`**: Classifies 2 motor imagery tasks: Left Hand vs Right Hand.
+
+## Change Log
+
+### 2025-12-02
+- **Fixed Data Slicing Bug**: Modified `dsfe/preprocess.py` to remove redundant data slicing. Previously, the code attempted to re-slice the data using `EPOCH_TMIN` and `EPOCH_TMAX` as offsets, even though the data loaded by `load_data.py` was already sliced to this window. This caused the data to be truncated (e.g., from 750 samples to 500 samples), leading to `ValueError: Invalid window indices` during feature extraction when accessing later time windows.

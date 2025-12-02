@@ -10,10 +10,14 @@
 
 # --- Ablation Study Flags ---
 USE_FTA = True          # Use Fourier Transform Amplitudes features
-USE_RG = True           # Use Riemannian Geometry features
+USE_RG = False           # Use Riemannian Geometry features
 USE_FDCC = True         # Use Feature-Dependent Correlation Coefficient band selection
 USE_RELIEFF = True      # Use ReliefF feature selection/fusion
 USE_ENSEMBLE = True     # Use Ensemble Learning (SVM+RF+NB)
+
+# --- Multi-Window Settings ---
+USE_MULTI_WINDOW = True
+TIME_WINDOWS = [(1.0, 2.0), (2.0, 3.0), (3.0, 4.0)] # Time windows relative to cue (s)
 
 # If USE_FDCC is False, we need a default band
 DEFAULT_BAND = (8.0, 30.0)
